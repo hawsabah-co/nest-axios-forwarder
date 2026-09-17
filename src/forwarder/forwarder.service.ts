@@ -189,6 +189,33 @@ export class ForwarderService {
       return body;
     }
 
+    // Reconstruct Buffer if serialized over JSON as { type: 'Buffer', data: number[] }
+    if (
+      typeof body === 'object' &&
+      body !== null &&
+      (body as any).type === 'Buffer' &&
+      Array.isArray((body as any).data)
+    ) {
+      console.log('Reconstructing Buffer from serialized Buffer object');
+      return Buffer.from((body as any).data);
+    }
+
+    // Reconstruct Buffer if serialized over JSON as { type: 'base64', data: string }
+    if (
+      typeof body === 'object' &&
+      body !== null &&
+      (body as any).type === 'base64' &&
+      typeof (body as any).data === 'string'
+    ) {
+      console.log('Reconstructing Buffer from base64 string payload');
+      return Buffer.from((body as any).data, 'base64');
+    }
+
+    if (Buffer.isBuffer(body)) {
+      console.log('Body is already a Buffer, returning as is');
+      return body;
+    }
+
     const contentType =
       headers['content-type'] || headers['Content-Type'] || '';
     console.log('Content-Type detected:', contentType);
