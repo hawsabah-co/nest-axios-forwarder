@@ -1,9 +1,7 @@
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-// src/main.ts
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
-
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -11,27 +9,19 @@ async function bootstrap() {
     bufferLogs: true,
     bodyParser: true,
   });
-  app.useLogger(['log', 'error', 'warn', 'debug', 'verbose']);
-
-  // Increase body size limit to handle large payloads (e.g., SSL certificates)
-  // Default is 100kb, we're increasing to 10MB
   app.useBodyParser('json', { limit: '10mb' });
   app.useBodyParser('urlencoded', { limit: '10mb', extended: true });
-
-  // Enable validation for all incoming requests
+  app.useLogger(['log', 'error', 'warn', 'debug', 'verbose']);
   app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true, // Strip properties that are not in the DTO
-      forbidNonWhitelisted: true, // Throw an error if non-whitelisted properties are present
-    }),
+    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }),
   );
-
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT', 8080);
-
-  await app.listen(port, '0.0.0.0');
+  const host = configService.get<string>('BIND_HOST', '0.0.0.0');
+  await app.listen(port, host);
   console.log(`Application is running on: ${await app.getUrl()}`);
 }
-bootstrap().catch((err) => {
-  console.error('Error during application bootstrap:', err);
+bootstrap().catch(() => {
+  console.error('Forwarder bootstrap failed');
+  process.exitCode = 1;
 });
